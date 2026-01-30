@@ -7,15 +7,24 @@ Scaffold a Three.js game project with AI-assisted design documents.
 Before running the CLI, have these ready:
 
 ### 1. 3D Assets (Required)
-Download a GLTF asset pack from:
+Download GLTF asset packs from:
 - [itch.io](https://itch.io/game-assets/tag-3d)
 - [Kenney.nl](https://kenney.nl/assets)
 - [Quaternius](https://quaternius.com/)
 
 The CLI will ask for the path to your downloaded assets folder and validate it contains `.gltf` or `.glb` files.
 
-### 2. Preview Image (Recommended)
-Most asset packs include a `Preview.jpg`. If not, take a screenshot of your assets. This is used by the AI to generate concept mockups.
+**Multi-Pack Support:** You can combine multiple asset packs by organizing them in subdirectories:
+```
+my-assets/
+├── characters/      # Asset pack 1 (with Preview.jpg)
+├── buildings/       # Asset pack 2 (with Preview.jpg)
+└── environment/     # Asset pack 3 (with Preview.jpg)
+```
+The CLI auto-detects this structure and combines all preview images into a single grid.
+
+### 2. Preview Image (Auto-generated for multi-packs)
+Most asset packs include a `Preview.jpg`. For multi-pack directories, the CLI automatically combines all subdirectory previews into one image. For single packs without a preview, take a screenshot of your assets.
 
 ### 3. API Keys (Required for automation)
 Set these as environment variables for the smoothest experience:

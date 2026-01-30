@@ -16,6 +16,14 @@ const path = require('path');
 const readline = require('readline');
 const { execSync, spawn } = require('child_process');
 
+// Sharp for image processing (optional, for combining previews)
+let sharp;
+try {
+  sharp = require('sharp');
+} catch (e) {
+  // Sharp not available - preview combining will be skipped
+}
+
 // Colors for terminal output
 const colors = {
   reset: '\x1b[0m',
@@ -89,6 +97,118 @@ function copyDir(src, dest, exclude = []) {
       fs.copyFileSync(srcPath, destPath);
     }
   }
+}
+
+// Find preview image in a directory
+function findPreview(dir) {
+  const previewNames = ['Preview.jpg', 'Preview.png', 'preview.jpg', 'preview.png', 
+                        'Preview.jpeg', 'preview.jpeg'];
+  for (const name of previewNames) {
+    const previewPath = path.join(dir, name);
+    if (fs.existsSync(previewPath)) {
+      return previewPath;
+    }
+  }
+  return null;
+}
+
+// Detect if directory is a multi-pack (has subdirs with previews)
+function detectMultiPack(sourceDir) {
+  const entries = fs.readdirSync(sourceDir, { withFileTypes: true });
+  const subdirs = entries.filter(e => e.isDirectory());
+  
+  if (subdirs.length === 0) return null;
+  
+  const packsWithPreviews = [];
+  
+  for (const subdir of subdirs) {
+    const subdirPath = path.join(sourceDir, subdir.name);
+    const preview = findPreview(subdirPath);
+    if (preview) {
+      packsWithPreviews.push({
+        name: subdir.name,
+        path: subdirPath,
+        preview: preview
+      });
+    }
+  }
+  
+  // Consider it a multi-pack if at least 2 subdirs have previews
+  if (packsWithPreviews.length >= 2) {
+    return packsWithPreviews;
+  }
+  
+  return null;
+}
+
+// Combine preview images into a grid
+async function combinePreviews(packs, outputPath) {
+  if (!sharp) {
+    console.log(c('yellow', '  ⚠ sharp not available - skipping preview combination'));
+    return null;
+  }
+  
+  const cellWidth = 512;
+  const cellHeight = 512;
+  const padding = 10;
+  const backgroundColor = { r: 30, g: 30, b: 30, alpha: 1 };
+  
+  const cols = Math.ceil(Math.sqrt(packs.length));
+  const rows = Math.ceil(packs.length / cols);
+  const totalWidth = cols * cellWidth + (cols + 1) * padding;
+  const totalHeight = rows * cellHeight + (rows + 1) * padding;
+  
+  console.log(c('dim', `  Creating ${cols}x${rows} combined preview...`));
+  
+  const composites = [];
+  
+  for (let i = 0; i < packs.length; i++) {
+    const pack = packs[i];
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    
+    const x = padding + col * (cellWidth + padding);
+    const y = padding + row * (cellHeight + padding);
+    
+    try {
+      const resized = await sharp(pack.preview)
+        .resize(cellWidth, cellHeight, {
+          fit: 'contain',
+          background: backgroundColor
+        })
+        .toBuffer();
+      
+      composites.push({
+        input: resized,
+        left: x,
+        top: y
+      });
+    } catch (err) {
+      console.log(c('yellow', `  ⚠ Failed to process ${pack.name}: ${err.message}`));
+    }
+  }
+  
+  if (composites.length === 0) return null;
+  
+  // Ensure output directory exists
+  const outputDir = path.dirname(outputPath);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
+  await sharp({
+    create: {
+      width: totalWidth,
+      height: totalHeight,
+      channels: 4,
+      background: backgroundColor
+    }
+  })
+    .composite(composites)
+    .jpeg({ quality: 90 })
+    .toFile(outputPath);
+  
+  return outputPath;
 }
 
 // Run a script
@@ -307,7 +427,21 @@ async function main() {
   fs.mkdirSync(assetsDir, { recursive: true });
   
   // Copy assets if path was provided
+  let isMultiPack = false;
+  let multiPackInfo = null;
+  
   if (assetsSourcePath) {
+    // Check if this is a multi-pack directory
+    multiPackInfo = detectMultiPack(assetsSourcePath);
+    isMultiPack = multiPackInfo !== null;
+    
+    if (isMultiPack) {
+      console.log(c('cyan', `  Detected multi-pack with ${multiPackInfo.length} asset packs:`));
+      for (const pack of multiPackInfo) {
+        console.log(c('dim', `    - ${pack.name}`));
+      }
+    }
+    
     console.log(c('dim', '  Copying assets...'));
     copyDir(assetsSourcePath, assetsDir, ['node_modules', '.git', '.DS_Store']);
     
@@ -326,6 +460,17 @@ async function main() {
     };
     const fileCount = countFiles(assetsDir);
     console.log(c('green', '  ✓ ') + `public/assets/${gameName}/ (${fileCount} files copied)`);
+    
+    // Combine previews if multi-pack
+    if (isMultiPack && sharp) {
+      try {
+        const combinedPreviewPath = path.join(assetsDir, 'Preview.jpg');
+        await combinePreviews(multiPackInfo, combinedPreviewPath);
+        console.log(c('green', '  ✓ ') + 'Combined preview image generated');
+      } catch (err) {
+        console.log(c('yellow', `  ⚠ Could not combine previews: ${err.message}`));
+      }
+    }
   } else {
     fs.writeFileSync(path.join(assetsDir, '.gitkeep'), '');
     console.log(c('green', '  ✓ ') + `public/assets/${gameName}/`);
