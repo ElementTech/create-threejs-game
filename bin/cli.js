@@ -194,6 +194,35 @@ async function main() {
     console.log('');
   }
   
+  // Ask for assets location
+  console.log(c('bright', '📁 3D Assets'));
+  console.log(c('dim', '─'.repeat(50)));
+  console.log(c('dim', 'If you\'ve already downloaded a 3D asset pack, provide the path.'));
+  console.log(c('dim', 'The contents will be copied to your project. Press Enter to skip.\n'));
+  
+  let assetsSourcePath = await ask('Path to assets folder');
+  
+  // Expand ~ to home directory
+  if (assetsSourcePath.startsWith('~')) {
+    assetsSourcePath = path.join(process.env.HOME || process.env.USERPROFILE, assetsSourcePath.slice(1));
+  }
+  
+  // Validate assets path if provided
+  if (assetsSourcePath && !fs.existsSync(assetsSourcePath)) {
+    console.log(c('yellow', `  Warning: Path not found: ${assetsSourcePath}`));
+    console.log(c('yellow', '  You can add assets manually later.\n'));
+    assetsSourcePath = '';
+  } else if (assetsSourcePath) {
+    const stat = fs.statSync(assetsSourcePath);
+    if (!stat.isDirectory()) {
+      console.log(c('yellow', '  Warning: Path is not a directory.'));
+      console.log(c('yellow', '  You can add assets manually later.\n'));
+      assetsSourcePath = '';
+    } else {
+      console.log(c('green', '  ✓ ') + 'Assets folder found\n');
+    }
+  }
+  
   // Copy template
   console.log(c('bright', '📦 Creating project...'));
   console.log(c('dim', '─'.repeat(50)));
@@ -244,8 +273,31 @@ async function main() {
   // Create assets directory
   const assetsDir = path.join(projectPath, 'public', 'assets', gameName);
   fs.mkdirSync(assetsDir, { recursive: true });
-  fs.writeFileSync(path.join(assetsDir, '.gitkeep'), '');
-  console.log(c('green', '  ✓ ') + `public/assets/${gameName}/`);
+  
+  // Copy assets if path was provided
+  if (assetsSourcePath) {
+    console.log(c('dim', '  Copying assets...'));
+    copyDir(assetsSourcePath, assetsDir, ['node_modules', '.git', '.DS_Store']);
+    
+    // Count copied files
+    const countFiles = (dir) => {
+      let count = 0;
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        if (item.isDirectory()) {
+          count += countFiles(path.join(dir, item.name));
+        } else {
+          count++;
+        }
+      }
+      return count;
+    };
+    const fileCount = countFiles(assetsDir);
+    console.log(c('green', '  ✓ ') + `public/assets/${gameName}/ (${fileCount} files copied)`);
+  } else {
+    fs.writeFileSync(path.join(assetsDir, '.gitkeep'), '');
+    console.log(c('green', '  ✓ ') + `public/assets/${gameName}/`);
+  }
   
   console.log('');
   console.log(c('green', `✅ Project created at: ${projectPath}`));
@@ -264,21 +316,34 @@ async function main() {
   const steps = [];
   let stepNum = 1;
   
-  // Step: Add assets
-  steps.push({
-    num: stepNum++,
-    manual: true,
-    text: `Add your 3D assets to ${c('cyan', `public/assets/${gameName}/`)}`,
-    detail: 'Download a GLTF asset pack from itch.io, Kenney.nl, or similar'
-  });
+  // Check if assets were copied and if Preview exists
+  const hasAssets = assetsSourcePath && fs.existsSync(assetsDir);
+  const previewExists = hasAssets && (
+    fs.existsSync(path.join(assetsDir, 'Preview.jpg')) ||
+    fs.existsSync(path.join(assetsDir, 'Preview.png')) ||
+    fs.existsSync(path.join(assetsDir, 'preview.jpg')) ||
+    fs.existsSync(path.join(assetsDir, 'preview.png'))
+  );
   
-  // Step: Add preview
-  steps.push({
-    num: stepNum++,
-    manual: true,
-    text: `Ensure ${c('cyan', 'Preview.jpg')} exists in the assets folder`,
-    detail: 'Most asset packs include one, or take a screenshot of your assets'
-  });
+  // Step: Add assets (only if not already copied)
+  if (!hasAssets) {
+    steps.push({
+      num: stepNum++,
+      manual: true,
+      text: `Add your 3D assets to ${c('cyan', `public/assets/${gameName}/`)}`,
+      detail: 'Download a GLTF asset pack from itch.io, Kenney.nl, or similar'
+    });
+  }
+  
+  // Step: Add preview (only if not found)
+  if (!previewExists) {
+    steps.push({
+      num: stepNum++,
+      manual: true,
+      text: `Ensure ${c('cyan', 'Preview.jpg')} exists in the assets folder`,
+      detail: 'Most asset packs include one, or take a screenshot of your assets'
+    });
+  }
   
   // Step: API keys
   if (!hasGoogleKey || !hasAnthropicKey) {
