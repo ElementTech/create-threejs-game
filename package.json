@@ -1,0 +1,29 @@
+{
+  "name": "create-threejs-game",
+  "version": "1.0.0",
+  "description": "Scaffold a Three.js game project with AI-assisted design documents",
+  "bin": {
+    "create-threejs-game": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "template"
+  ],
+  "keywords": [
+    "threejs",
+    "game",
+    "scaffold",
+    "cli",
+    "ai",
+    "vibe-coding"
+  ],
+  "author": "ElementTech",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ElementTech/create-threejs-game.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

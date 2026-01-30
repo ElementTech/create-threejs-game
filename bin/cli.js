@@ -1,0 +1,348 @@
+#!/usr/bin/env node
+
+/**
+ * create-threejs-game CLI
+ * 
+ * Interactive CLI to scaffold a Three.js game project with AI-assisted
+ * design documents and automation.
+ * 
+ * Usage:
+ *   npx create-threejs-game
+ *   npx create-threejs-game my-game
+ */
+
+const fs = require('fs');
+const path = require('path');
+const readline = require('readline');
+const { execSync, spawn } = require('child_process');
+
+// Colors for terminal output
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  dim: '\x1b[2m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m'
+};
+
+const c = (color, text) => `${colors[color]}${text}${colors.reset}`;
+
+// Banner
+function showBanner() {
+  console.log('');
+  console.log(c('cyan', '╔═══════════════════════════════════════════════════════════════╗'));
+  console.log(c('cyan', '║') + c('bright', '           CREATE-THREEJS-GAME                              ') + c('cyan', '║'));
+  console.log(c('cyan', '║') + '       AI-Assisted Three.js Game Scaffolding                 ' + c('cyan', '║'));
+  console.log(c('cyan', '╚═══════════════════════════════════════════════════════════════╝'));
+  console.log('');
+}
+
+// Readline interface
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+// Promisified question
+function ask(question, defaultValue = '') {
+  const prompt = defaultValue 
+    ? `${question} ${c('dim', `(${defaultValue})`)}: `
+    : `${question}: `;
+  
+  return new Promise((resolve) => {
+    rl.question(prompt, (answer) => {
+      resolve(answer.trim() || defaultValue);
+    });
+  });
+}
+
+// Promisified yes/no
+async function confirm(question, defaultYes = true) {
+  const hint = defaultYes ? 'Y/n' : 'y/N';
+  const answer = await ask(`${question} [${hint}]`);
+  
+  if (!answer) return defaultYes;
+  return answer.toLowerCase().startsWith('y');
+}
+
+// Copy directory recursively
+function copyDir(src, dest, exclude = []) {
+  if (!fs.existsSync(dest)) {
+    fs.mkdirSync(dest, { recursive: true });
+  }
+  
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    if (exclude.includes(entry.name)) continue;
+    
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    
+    if (entry.isDirectory()) {
+      copyDir(srcPath, destPath, exclude);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+// Run a script
+function runScript(scriptPath, args = [], cwd) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('node', [scriptPath, ...args], {
+      cwd,
+      stdio: 'inherit'
+    });
+    
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Script exited with code ${code}`));
+    });
+    
+    child.on('error', reject);
+  });
+}
+
+// Main CLI
+async function main() {
+  showBanner();
+  
+  // Get project name from args or prompt
+  let projectName = process.argv[2];
+  
+  if (!projectName) {
+    projectName = await ask(c('bright', 'Project name'), 'my-threejs-game');
+  }
+  
+  // Sanitize project name
+  projectName = projectName.toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+  
+  const projectPath = path.join(process.cwd(), projectName);
+  
+  // Check if directory exists
+  if (fs.existsSync(projectPath)) {
+    const overwrite = await confirm(
+      c('yellow', `Directory "${projectName}" already exists. Overwrite?`),
+      false
+    );
+    if (!overwrite) {
+      console.log(c('red', '\nAborted.'));
+      rl.close();
+      process.exit(1);
+    }
+    fs.rmSync(projectPath, { recursive: true });
+  }
+  
+  console.log('');
+  
+  // Get game details
+  console.log(c('bright', '📝 Game Details'));
+  console.log(c('dim', '─'.repeat(50)));
+  
+  const gameName = await ask('Game asset folder name', projectName.replace(/-/g, '_'));
+  
+  console.log('');
+  console.log(c('dim', 'Describe your game in 1-3 sentences. Be specific about:'));
+  console.log(c('dim', '  - Game type (RTS, tower defense, puzzle, etc.)'));
+  console.log(c('dim', '  - Setting/theme'));
+  console.log(c('dim', '  - Core mechanics'));
+  console.log('');
+  
+  const gameDescription = await ask(c('bright', 'Game description'));
+  
+  if (!gameDescription) {
+    console.log(c('yellow', '\nWarning: No description provided. You can edit config.json later.'));
+  }
+  
+  console.log('');
+  
+  // API Keys (optional)
+  console.log(c('bright', '🔑 API Keys (optional - can configure later)'));
+  console.log(c('dim', '─'.repeat(50)));
+  console.log(c('dim', 'These enable automated mockup and document generation.'));
+  console.log(c('dim', 'Press Enter to skip and configure later.\n'));
+  
+  const googleApiKey = await ask('Google AI Studio API key');
+  const anthropicApiKey = await ask('Anthropic API key');
+  
+  console.log('');
+  
+  // Copy template
+  console.log(c('bright', '📦 Creating project...'));
+  console.log(c('dim', '─'.repeat(50)));
+  
+  // Find template directory
+  const templateDir = path.join(__dirname, '..', 'template');
+  const fallbackTemplateDir = path.join(__dirname, '..');
+  
+  const sourceDir = fs.existsSync(templateDir) ? templateDir : fallbackTemplateDir;
+  
+  // Files/folders to copy
+  const itemsToCopy = ['.claude', '.codex', 'docs', 'plans', 'prompts', 'public', 'scripts', 'README.md'];
+  
+  fs.mkdirSync(projectPath, { recursive: true });
+  
+  for (const item of itemsToCopy) {
+    const srcPath = path.join(sourceDir, item);
+    const destPath = path.join(projectPath, item);
+    
+    if (fs.existsSync(srcPath)) {
+      if (fs.statSync(srcPath).isDirectory()) {
+        copyDir(srcPath, destPath, ['node_modules', '.git']);
+      } else {
+        fs.copyFileSync(srcPath, destPath);
+      }
+      console.log(c('green', '  ✓ ') + item);
+    }
+  }
+  
+  // Create config.json
+  const config = {
+    google_ai_studio: {
+      api_key: googleApiKey || 'YOUR_GOOGLE_AI_STUDIO_API_KEY'
+    },
+    anthropic: {
+      api_key: anthropicApiKey || 'YOUR_ANTHROPIC_API_KEY'
+    },
+    game: {
+      name: gameName,
+      description: gameDescription || 'YOUR_GAME_DESCRIPTION'
+    }
+  };
+  
+  const configPath = path.join(projectPath, 'scripts', 'config.json');
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  console.log(c('green', '  ✓ ') + 'scripts/config.json');
+  
+  // Create assets directory
+  const assetsDir = path.join(projectPath, 'public', 'assets', gameName);
+  fs.mkdirSync(assetsDir, { recursive: true });
+  fs.writeFileSync(path.join(assetsDir, '.gitkeep'), '');
+  console.log(c('green', '  ✓ ') + `public/assets/${gameName}/`);
+  
+  console.log('');
+  console.log(c('green', `✅ Project created at: ${projectPath}`));
+  console.log('');
+  
+  // Check if we can run automation
+  const hasGoogleKey = googleApiKey && !googleApiKey.includes('YOUR_');
+  const hasAnthropicKey = anthropicApiKey && !anthropicApiKey.includes('YOUR_');
+  const hasDescription = gameDescription && gameDescription.length > 10;
+  
+  // Next steps
+  console.log(c('bright', '📋 Next Steps'));
+  console.log(c('dim', '─'.repeat(50)));
+  console.log('');
+  
+  const steps = [];
+  let stepNum = 1;
+  
+  // Step: Add assets
+  steps.push({
+    num: stepNum++,
+    manual: true,
+    text: `Add your 3D assets to ${c('cyan', `public/assets/${gameName}/`)}`,
+    detail: 'Download a GLTF asset pack from itch.io, Kenney.nl, or similar'
+  });
+  
+  // Step: Add preview
+  steps.push({
+    num: stepNum++,
+    manual: true,
+    text: `Ensure ${c('cyan', 'Preview.jpg')} exists in the assets folder`,
+    detail: 'Most asset packs include one, or take a screenshot of your assets'
+  });
+  
+  // Step: API keys
+  if (!hasGoogleKey || !hasAnthropicKey) {
+    const missing = [];
+    if (!hasGoogleKey) missing.push('Google AI Studio');
+    if (!hasAnthropicKey) missing.push('Anthropic');
+    
+    steps.push({
+      num: stepNum++,
+      manual: true,
+      text: `Add API keys to ${c('cyan', 'scripts/config.json')}`,
+      detail: `Missing: ${missing.join(', ')}`
+    });
+  }
+  
+  // Step: Description
+  if (!hasDescription) {
+    steps.push({
+      num: stepNum++,
+      manual: true,
+      text: `Add game description to ${c('cyan', 'scripts/config.json')}`,
+      detail: 'Be specific about game type, setting, and mechanics'
+    });
+  }
+  
+  // Step: Run pipeline
+  steps.push({
+    num: stepNum++,
+    manual: false,
+    text: `Run ${c('cyan', 'node scripts/pipeline.js')}`,
+    detail: 'Generates assets.json, mockup, PRD, TDD, and execution plan'
+  });
+  
+  // Step: Implement
+  steps.push({
+    num: stepNum++,
+    manual: false,
+    text: 'Open in Claude Code/Cursor and follow the generated plan',
+    detail: 'The plan will be in plans/ folder with implementation instructions'
+  });
+  
+  // Print steps
+  for (const step of steps) {
+    const icon = step.manual ? c('yellow', '🖐️ ') : c('green', '🤖 ');
+    const label = step.manual ? c('yellow', '[MANUAL]') : c('green', '[AUTO]');
+    
+    console.log(`${icon}${step.num}. ${step.text}`);
+    console.log(`   ${label} ${c('dim', step.detail)}`);
+    console.log('');
+  }
+  
+  // Summary
+  console.log(c('dim', '─'.repeat(50)));
+  console.log('');
+  console.log(c('bright', 'Quick commands:'));
+  console.log(`  ${c('cyan', `cd ${projectName}`)}`);
+  console.log(`  ${c('cyan', 'node scripts/pipeline.js')}  ${c('dim', '# After adding assets')}`);
+  console.log('');
+  
+  // Offer to open directory
+  const openDir = await confirm('Open project directory?', true);
+  
+  rl.close();
+  
+  if (openDir) {
+    try {
+      if (process.platform === 'darwin') {
+        execSync(`open "${projectPath}"`);
+      } else if (process.platform === 'win32') {
+        execSync(`start "" "${projectPath}"`);
+      } else {
+        execSync(`xdg-open "${projectPath}"`);
+      }
+    } catch (e) {
+      console.log(c('dim', `cd ${projectPath}`));
+    }
+  }
+  
+  console.log('');
+  console.log(c('green', '🎮 Happy game building!'));
+  console.log('');
+}
+
+// Run
+main().catch((err) => {
+  console.error(c('red', '\nError: ') + err.message);
+  rl.close();
+  process.exit(1);
+});

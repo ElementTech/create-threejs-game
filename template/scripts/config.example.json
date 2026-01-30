@@ -1,0 +1,12 @@
+{
+  "google_ai_studio": {
+    "api_key": "YOUR_GOOGLE_AI_STUDIO_API_KEY"
+  },
+  "anthropic": {
+    "api_key": "YOUR_ANTHROPIC_API_KEY"
+  },
+  "game": {
+    "name": "your_game_name",
+    "description": "A 3D real-time strategy game set in a medieval fantasy world where players gather resources, build bases, and destroy the enemy."
+  }
+}
