@@ -35,7 +35,11 @@ npx create-threejs-game
 You'll be asked for:
 1. Project name
 2. Game description (1-3 sentences)
-3. API keys (optional, can configure later)
+3. API keys (only if not found in environment)
+
+**Supported environment variables:**
+- `GOOGLE_API_KEY` or `GOOGLE_AI_STUDIO_API_KEY`
+- `ANTHROPIC_API_KEY`
 
 ## Manual Steps
 

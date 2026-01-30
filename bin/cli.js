@@ -160,16 +160,39 @@ async function main() {
   
   console.log('');
   
-  // API Keys (optional)
-  console.log(c('bright', '🔑 API Keys (optional - can configure later)'));
-  console.log(c('dim', '─'.repeat(50)));
-  console.log(c('dim', 'These enable automated mockup and document generation.'));
-  console.log(c('dim', 'Press Enter to skip and configure later.\n'));
+  // API Keys - check env vars first
+  let googleApiKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY || '';
+  let anthropicApiKey = process.env.ANTHROPIC_API_KEY || '';
   
-  const googleApiKey = await ask('Google AI Studio API key');
-  const anthropicApiKey = await ask('Anthropic API key');
+  const hasGoogleEnv = googleApiKey && googleApiKey.length > 10;
+  const hasAnthropicEnv = anthropicApiKey && anthropicApiKey.length > 10;
   
-  console.log('');
+  if (hasGoogleEnv && hasAnthropicEnv) {
+    console.log(c('bright', '🔑 API Keys'));
+    console.log(c('dim', '─'.repeat(50)));
+    console.log(c('green', '  ✓ ') + 'GOOGLE_API_KEY found in environment');
+    console.log(c('green', '  ✓ ') + 'ANTHROPIC_API_KEY found in environment');
+    console.log('');
+  } else {
+    console.log(c('bright', '🔑 API Keys (optional - can configure later)'));
+    console.log(c('dim', '─'.repeat(50)));
+    
+    if (hasGoogleEnv) {
+      console.log(c('green', '  ✓ ') + 'GOOGLE_API_KEY found in environment');
+    } else {
+      console.log(c('dim', 'Google AI Studio enables automated mockup generation.'));
+      googleApiKey = await ask('Google AI Studio API key');
+    }
+    
+    if (hasAnthropicEnv) {
+      console.log(c('green', '  ✓ ') + 'ANTHROPIC_API_KEY found in environment');
+    } else {
+      console.log(c('dim', 'Anthropic enables automated PRD/TDD/plan generation.'));
+      anthropicApiKey = await ask('Anthropic API key');
+    }
+    
+    console.log('');
+  }
   
   // Copy template
   console.log(c('bright', '📦 Creating project...'));

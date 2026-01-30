@@ -33,10 +33,19 @@ if (!fs.existsSync(configPath)) {
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 const { anthropic, game } = config;
 
-if (!anthropic?.api_key || anthropic.api_key.includes('YOUR_')) {
-  console.error('Error: Anthropic API key not configured in config.json');
+// Check config first, then env vars
+const apiKey = (anthropic?.api_key && !anthropic.api_key.includes('YOUR_'))
+  ? anthropic.api_key
+  : process.env.ANTHROPIC_API_KEY;
+
+if (!apiKey) {
+  console.error('Error: Anthropic API key not found');
+  console.error('Set ANTHROPIC_API_KEY env var or configure scripts/config.json');
   process.exit(1);
 }
+
+// Use resolved key
+anthropic.api_key = apiKey;
 
 // Paths
 const prdPath = path.join(projectRoot, 'docs', 'prd.md');

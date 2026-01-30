@@ -33,10 +33,19 @@ if (!fs.existsSync(configPath)) {
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 const { google_ai_studio, game } = config;
 
-if (!google_ai_studio?.api_key || google_ai_studio.api_key.includes('YOUR_')) {
-  console.error('Error: Google AI Studio API key not configured in config.json');
+// Check config first, then env vars
+const apiKey = (google_ai_studio?.api_key && !google_ai_studio.api_key.includes('YOUR_'))
+  ? google_ai_studio.api_key
+  : process.env.GOOGLE_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY;
+
+if (!apiKey) {
+  console.error('Error: Google AI Studio API key not found');
+  console.error('Set GOOGLE_API_KEY env var or configure scripts/config.json');
   process.exit(1);
 }
+
+// Use resolved key
+google_ai_studio.api_key = apiKey;
 
 // Paths
 const assetsDir = path.join(projectRoot, 'public', 'assets', game.name);
