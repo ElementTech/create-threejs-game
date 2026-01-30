@@ -194,33 +194,65 @@ async function main() {
     console.log('');
   }
   
-  // Ask for assets location
-  console.log(c('bright', '📁 3D Assets'));
+  // Ask for assets location (required for automation)
+  console.log(c('bright', '📁 3D Assets (Required)'));
   console.log(c('dim', '─'.repeat(50)));
-  console.log(c('dim', 'If you\'ve already downloaded a 3D asset pack, provide the path.'));
-  console.log(c('dim', 'The contents will be copied to your project. Press Enter to skip.\n'));
+  console.log(c('dim', 'The automation pipeline needs 3D assets to generate mockups and docs.'));
+  console.log(c('dim', 'Download a GLTF asset pack from itch.io, Kenney.nl, etc. first.\n'));
   
-  let assetsSourcePath = await ask('Path to assets folder');
+  let assetsSourcePath = '';
   
-  // Expand ~ to home directory
-  if (assetsSourcePath.startsWith('~')) {
-    assetsSourcePath = path.join(process.env.HOME || process.env.USERPROFILE, assetsSourcePath.slice(1));
-  }
-  
-  // Validate assets path if provided
-  if (assetsSourcePath && !fs.existsSync(assetsSourcePath)) {
-    console.log(c('yellow', `  Warning: Path not found: ${assetsSourcePath}`));
-    console.log(c('yellow', '  You can add assets manually later.\n'));
-    assetsSourcePath = '';
-  } else if (assetsSourcePath) {
-    const stat = fs.statSync(assetsSourcePath);
-    if (!stat.isDirectory()) {
-      console.log(c('yellow', '  Warning: Path is not a directory.'));
-      console.log(c('yellow', '  You can add assets manually later.\n'));
-      assetsSourcePath = '';
-    } else {
-      console.log(c('green', '  ✓ ') + 'Assets folder found\n');
+  while (!assetsSourcePath) {
+    let inputPath = await ask(c('bright', 'Path to assets folder'));
+    
+    if (!inputPath) {
+      const skipAnyway = await confirm(
+        c('yellow', 'Without assets, the automation pipeline cannot run. Skip anyway?'),
+        false
+      );
+      if (skipAnyway) {
+        console.log(c('yellow', '\n  ⚠ No assets provided. You\'ll need to add them manually before running the pipeline.\n'));
+        break;
+      }
+      continue;
     }
+    
+    // Expand ~ to home directory
+    if (inputPath.startsWith('~')) {
+      inputPath = path.join(process.env.HOME || process.env.USERPROFILE, inputPath.slice(1));
+    }
+    
+    // Resolve relative paths
+    if (!path.isAbsolute(inputPath)) {
+      inputPath = path.resolve(process.cwd(), inputPath);
+    }
+    
+    // Validate path
+    if (!fs.existsSync(inputPath)) {
+      console.log(c('red', `  ✗ Path not found: ${inputPath}`));
+      console.log(c('dim', '  Please check the path and try again.\n'));
+      continue;
+    }
+    
+    const stat = fs.statSync(inputPath);
+    if (!stat.isDirectory()) {
+      console.log(c('red', '  ✗ Path is not a directory.'));
+      console.log(c('dim', '  Please provide a folder path.\n'));
+      continue;
+    }
+    
+    // Check if it has any gltf/glb files
+    const hasModels = fs.readdirSync(inputPath, { recursive: true })
+      .some(f => f.endsWith('.gltf') || f.endsWith('.glb'));
+    
+    if (!hasModels) {
+      console.log(c('yellow', '  ⚠ No .gltf or .glb files found in this folder.'));
+      const useAnyway = await confirm('Use this folder anyway?', false);
+      if (!useAnyway) continue;
+    }
+    
+    assetsSourcePath = inputPath;
+    console.log(c('green', '  ✓ ') + 'Assets folder validated\n');
   }
   
   // Copy template

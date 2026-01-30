@@ -1,6 +1,6 @@
 {
   "name": "create-threejs-game",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Scaffold a Three.js game project with AI-assisted design documents",
   "bin": {
     "create-threejs-game": "./bin/cli.js"
