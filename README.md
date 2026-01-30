@@ -2,70 +2,67 @@
 
 Scaffold a Three.js game project with AI-assisted design documents.
 
-## Quick Start
+## Prerequisites
+
+Before running the CLI, have these ready:
+
+### 1. 3D Assets (Required)
+Download a GLTF asset pack from:
+- [itch.io](https://itch.io/game-assets/tag-3d)
+- [Kenney.nl](https://kenney.nl/assets)
+- [Quaternius](https://quaternius.com/)
+
+The CLI will ask for the path to your downloaded assets folder and validate it contains `.gltf` or `.glb` files.
+
+### 2. Preview Image (Recommended)
+Most asset packs include a `Preview.jpg`. If not, take a screenshot of your assets. This is used by the AI to generate concept mockups.
+
+### 3. API Keys (Required for automation)
+Set these as environment variables for the smoothest experience:
 
 ```bash
-npx create-threejs-game my-game
-cd my-game
-# Add assets to public/assets/my_game/
-node scripts/pipeline.js
+export GOOGLE_API_KEY="your-key"      # or GOOGLE_AI_STUDIO_API_KEY
+export ANTHROPIC_API_KEY="your-key"
 ```
 
-## What it does
+Get keys from:
+- [Google AI Studio](https://aistudio.google.com/) - free tier available
+- [Anthropic Console](https://console.anthropic.com/)
 
-This CLI creates a Three.js game project with:
+If not set, the CLI will prompt for them.
 
-- **Three.js skills** for Claude/Codex AI assistance
-- **Automation scripts** to generate:
-  - Asset index (assets.json)
-  - Concept mockup (via Google AI Studio)
-  - Product Requirements Document (PRD)
-  - Technical Design Document (TDD)
-  - Implementation plan
-- **Prompt templates** for each generation step
-
-## Interactive Setup
-
-Run without arguments for interactive mode:
+## Quick Start
 
 ```bash
 npx create-threejs-game
 ```
 
-You'll be asked for:
-1. Project name
-2. Game description (1-3 sentences)
-3. API keys (only if not found in environment)
+The CLI will:
+1. Ask for your **project name**
+2. Ask for a **game description** (1-3 sentences describing your game)
+3. Check for **API keys** (from env vars, or prompt if missing)
+4. Ask for **path to your assets folder** (required for automation)
+5. Validate everything and tell you if anything is missing
+6. Create your project with assets copied in
 
-**Supported environment variables:**
-- `GOOGLE_API_KEY` or `GOOGLE_AI_STUDIO_API_KEY`
-- `ANTHROPIC_API_KEY`
-
-## Manual Steps
-
-After scaffolding, you'll need to:
-
-1. **Add your 3D assets** to `public/assets/{game_name}/`
-   - Download from itch.io, Kenney.nl, Quaternius, etc.
-   - GLTF format preferred
-
-2. **Add Preview.jpg** to the assets folder
-   - Most asset packs include one
-   - Or screenshot your assets
-
-3. **Configure API keys** in `scripts/config.json`:
-   - Google AI Studio: for mockup generation
-   - Anthropic: for PRD/TDD/plan generation
-
-## Automated Pipeline
-
-Once configured, run:
+Then run the automation:
 
 ```bash
+cd my-game
 node scripts/pipeline.js
 ```
 
-This generates all design documents automatically, leaving you with an implementation plan to follow in Claude Code or Cursor.
+## What Gets Generated
+
+The automation pipeline creates:
+
+| Step | Output | AI Service |
+|------|--------|------------|
+| Asset Index | `public/assets/{game}/assets.json` | Local script |
+| Concept Mockup | `public/{game}/concept.jpg` | Google AI Studio |
+| PRD | `docs/prd.md` | Claude (Anthropic) |
+| TDD | `docs/tdd.md` | Claude (Anthropic) |
+| Execution Plan | `plans/plan.md` | Claude (Anthropic) |
 
 ## Project Structure
 
@@ -75,22 +72,29 @@ my-game/
 ├── .codex/skills/       # Three.js skills for Codex
 ├── docs/                # Generated PRD and TDD
 ├── plans/               # Generated implementation plans
-├── prompts/             # Manual prompt templates (fallback)
+├── prompts/             # Prompt templates (fallback/reference)
 ├── public/
-│   └── assets/{game}/   # Your 3D assets go here
+│   └── assets/{game}/   # Your 3D assets (copied by CLI)
 ├── scripts/
-│   ├── config.json      # Your configuration
+│   ├── config.json      # API keys and game config
 │   ├── pipeline.js      # Run full automation
 │   └── generate-*.js    # Individual generators
-└── README.md            # Detailed workflow guide
+└── README.md
+```
+
+## Final Step
+
+After the pipeline completes, open your project in Claude Code or Cursor and follow the generated execution plan:
+
+```
+Please proceed with implementing based on the plan in plans/plan.md
 ```
 
 ## Requirements
 
 - Node.js 18+
-- API keys (for automation):
-  - [Google AI Studio](https://aistudio.google.com/) - free tier available
-  - [Anthropic](https://console.anthropic.com/) - API access required
+- API keys (see Prerequisites)
+- 3D assets in GLTF format
 
 ## License
 
