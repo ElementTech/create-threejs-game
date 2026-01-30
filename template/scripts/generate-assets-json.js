@@ -63,8 +63,17 @@ function getCategory(ext) {
   return 'Other';
 }
 
+// Get pack name from relative path (first directory component)
+function getPackName(relativePath) {
+  const parts = relativePath.split('/');
+  if (parts.length > 1) {
+    return parts[0];
+  }
+  return null; // Asset is at root level
+}
+
 // Recursively scan directory for assets
-function scanDirectory(dir, relativeTo) {
+function scanDirectory(dir, relativeTo, rootDir = relativeTo) {
   const assets = [];
   
   if (!fs.existsSync(dir)) {
@@ -77,8 +86,10 @@ function scanDirectory(dir, relativeTo) {
     const fullPath = path.join(dir, item.name);
     
     if (item.isDirectory()) {
+      // Skip hidden directories
+      if (item.name.startsWith('.')) continue;
       // Recursively scan subdirectories
-      assets.push(...scanDirectory(fullPath, relativeTo));
+      assets.push(...scanDirectory(fullPath, relativeTo, rootDir));
     } else if (item.isFile()) {
       const ext = path.extname(item.name).toLowerCase();
       
@@ -93,17 +104,25 @@ function scanDirectory(dir, relativeTo) {
       
       if (!allExtensions.includes(ext)) continue;
       
-      const relativePath = path.relative(relativeTo, fullPath);
+      const relativePath = path.relative(relativeTo, fullPath).replace(/\\/g, '/');
       const category = getCategory(ext);
+      const pack = getPackName(relativePath);
       
-      assets.push({
+      const asset = {
         name: item.name,
-        path: `public/assets/${gameName}/${relativePath.replace(/\\/g, '/')}`,
-        relativePath: relativePath.replace(/\\/g, '/'),
+        path: `public/assets/${gameName}/${relativePath}`,
+        relativePath: relativePath,
         category: category,
         extension: ext,
         focusGlTF: ext === '.gltf' || ext === '.glb'
-      });
+      };
+      
+      // Add pack field if asset is in a subdirectory
+      if (pack) {
+        asset.pack = pack;
+      }
+      
+      assets.push(asset);
     }
   }
   
@@ -115,8 +134,18 @@ console.log(`Scanning assets in: ${assetsDir}`);
 
 const assets = scanDirectory(assetsDir, assetsDir);
 
-// Sort assets by name
-assets.sort((a, b) => a.name.localeCompare(b.name));
+// Sort assets by pack then name
+assets.sort((a, b) => {
+  if (a.pack && b.pack) {
+    const packCompare = a.pack.localeCompare(b.pack);
+    if (packCompare !== 0) return packCompare;
+  } else if (a.pack) {
+    return 1; // Assets with packs after root assets
+  } else if (b.pack) {
+    return -1;
+  }
+  return a.name.localeCompare(b.name);
+});
 
 // Count by category
 const categoryCounts = {};
@@ -124,8 +153,18 @@ for (const asset of assets) {
   categoryCounts[asset.category] = (categoryCounts[asset.category] || 0) + 1;
 }
 
+// Count by pack
+const packCounts = {};
+for (const asset of assets) {
+  const pack = asset.pack || '(root)';
+  packCounts[pack] = (packCounts[pack] || 0) + 1;
+}
+
 // Count glTF assets
 const glTFCount = assets.filter(a => a.focusGlTF).length;
+
+// Get unique packs
+const packs = [...new Set(assets.map(a => a.pack).filter(Boolean))];
 
 // Build output
 const output = {
@@ -134,7 +173,9 @@ const output = {
     root: `public/assets/${gameName}`,
     totalAssets: assets.length,
     glTFAssetCount: glTFCount,
-    categories: categoryCounts
+    categories: categoryCounts,
+    packs: packs.length > 0 ? packs : undefined,
+    packCounts: packs.length > 0 ? packCounts : undefined
   },
   assets: assets
 };
@@ -147,3 +188,6 @@ console.log(`\nSummary:`);
 console.log(`  Total assets: ${assets.length}`);
 console.log(`  glTF/GLB models: ${glTFCount}`);
 console.log(`  Categories:`, categoryCounts);
+if (packs.length > 0) {
+  console.log(`  Packs (${packs.length}):`, packCounts);
+}
