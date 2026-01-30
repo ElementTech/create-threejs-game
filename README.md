@@ -74,6 +74,8 @@ my-game/
 ├── plans/               # Generated implementation plans
 ├── prompts/             # Prompt templates (fallback/reference)
 ├── public/
+│   ├── {game}/
+│   │   └── concept.jpg  # Generated mockup
 │   └── assets/{game}/   # Your 3D assets (copied by CLI)
 ├── scripts/
 │   ├── config.json      # API keys and game config
