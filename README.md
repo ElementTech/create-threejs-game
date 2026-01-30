@@ -14,14 +14,18 @@ Download GLTF asset packs from:
 
 The CLI will ask for the path to your downloaded assets folder and validate it contains `.gltf` or `.glb` files.
 
-**Multi-Pack Support:** You can combine multiple asset packs by organizing them in subdirectories:
+**Multi-Pack Support:** You can combine multiple asset packs by organizing them in subdirectories (nested to any depth):
 ```
 my-assets/
-├── characters/      # Asset pack 1 (with Preview.jpg)
-├── buildings/       # Asset pack 2 (with Preview.jpg)
-└── environment/     # Asset pack 3 (with Preview.jpg)
+├── characters/
+│   ├── humans/        # Has Preview.jpg
+│   └── monsters/      # Has Preview.jpg
+├── buildings/         # Has Preview.jpg
+└── environment/
+    ├── trees/         # Has Preview.jpg
+    └── rocks/         # Has Preview.jpg
 ```
-The CLI auto-detects this structure and combines all preview images into a single grid.
+The CLI recursively finds all directories with previews and combines them into a single grid.
 
 ### 2. Preview Image (Auto-generated for multi-packs)
 Most asset packs include a `Preview.jpg`. For multi-pack directories, the CLI automatically combines all subdirectory previews into one image. For single packs without a preview, take a screenshot of your assets.

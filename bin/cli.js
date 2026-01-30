@@ -112,28 +112,41 @@ function findPreview(dir) {
   return null;
 }
 
-// Detect if directory is a multi-pack (has subdirs with previews)
-function detectMultiPack(sourceDir) {
-  const entries = fs.readdirSync(sourceDir, { withFileTypes: true });
-  const subdirs = entries.filter(e => e.isDirectory());
+// Recursively find all directories with preview images
+function findPacksWithPreviews(dir, basePath = dir) {
+  const packs = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
   
-  if (subdirs.length === 0) return null;
-  
-  const packsWithPreviews = [];
-  
-  for (const subdir of subdirs) {
-    const subdirPath = path.join(sourceDir, subdir.name);
-    const preview = findPreview(subdirPath);
-    if (preview) {
-      packsWithPreviews.push({
-        name: subdir.name,
-        path: subdirPath,
-        preview: preview
-      });
-    }
+  // Check if this directory has a preview
+  const preview = findPreview(dir);
+  if (preview && dir !== basePath) {
+    // Use relative path from base as the name
+    const relativePath = path.relative(basePath, dir);
+    packs.push({
+      name: relativePath,
+      path: dir,
+      preview: preview
+    });
   }
   
-  // Consider it a multi-pack if at least 2 subdirs have previews
+  // Recursively check subdirectories
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith('.')) continue; // Skip hidden dirs
+    
+    const subdirPath = path.join(dir, entry.name);
+    const subPacks = findPacksWithPreviews(subdirPath, basePath);
+    packs.push(...subPacks);
+  }
+  
+  return packs;
+}
+
+// Detect if directory is a multi-pack (has subdirs with previews)
+function detectMultiPack(sourceDir) {
+  const packsWithPreviews = findPacksWithPreviews(sourceDir, sourceDir);
+  
+  // Consider it a multi-pack if at least 2 directories have previews
   if (packsWithPreviews.length >= 2) {
     return packsWithPreviews;
   }

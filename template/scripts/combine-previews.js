@@ -23,29 +23,47 @@ try {
 }
 
 /**
- * Find all preview images in subdirectories
+ * Find preview image in a directory
  */
-function findPreviews(sourceDir) {
+function findPreview(dir) {
+  const previewNames = ['Preview.jpg', 'Preview.png', 'preview.jpg', 'preview.png', 
+                        'Preview.jpeg', 'preview.jpeg'];
+  for (const name of previewNames) {
+    const previewPath = path.join(dir, name);
+    if (fs.existsSync(previewPath)) {
+      return previewPath;
+    }
+  }
+  return null;
+}
+
+/**
+ * Recursively find all preview images in subdirectories (any depth)
+ */
+function findPreviews(sourceDir, basePath = sourceDir) {
   const previews = [];
   const entries = fs.readdirSync(sourceDir, { withFileTypes: true });
   
+  // Check if this directory has a preview (skip the root)
+  if (sourceDir !== basePath) {
+    const preview = findPreview(sourceDir);
+    if (preview) {
+      const relativePath = path.relative(basePath, sourceDir);
+      previews.push({
+        path: preview,
+        name: relativePath
+      });
+    }
+  }
+  
+  // Recursively check subdirectories
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith('.')) continue; // Skip hidden dirs
     
-    const subdir = path.join(sourceDir, entry.name);
-    const previewNames = ['Preview.jpg', 'Preview.png', 'preview.jpg', 'preview.png', 
-                          'Preview.jpeg', 'preview.jpeg'];
-    
-    for (const name of previewNames) {
-      const previewPath = path.join(subdir, name);
-      if (fs.existsSync(previewPath)) {
-        previews.push({
-          path: previewPath,
-          name: entry.name
-        });
-        break;
-      }
-    }
+    const subdirPath = path.join(sourceDir, entry.name);
+    const subPreviews = findPreviews(subdirPath, basePath);
+    previews.push(...subPreviews);
   }
   
   return previews;
@@ -182,7 +200,7 @@ async function main() {
 }
 
 // Export for use as module
-module.exports = { findPreviews, combineImages, calculateGrid };
+module.exports = { findPreview, findPreviews, combineImages, calculateGrid };
 
 // Run if called directly
 if (require.main === module) {
