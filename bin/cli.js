@@ -140,13 +140,12 @@ async function main() {
   
   console.log('');
   
+  // Game name is same as project name (sanitized for folder)
+  const gameName = projectName.replace(/-/g, '_');
+  
   // Get game details
   console.log(c('bright', '📝 Game Details'));
   console.log(c('dim', '─'.repeat(50)));
-  
-  const gameName = await ask('Game asset folder name', projectName.replace(/-/g, '_'));
-  
-  console.log('');
   console.log(c('dim', 'Describe your game in 1-3 sentences. Be specific about:'));
   console.log(c('dim', '  - Game type (RTS, tower defense, puzzle, etc.)'));
   console.log(c('dim', '  - Setting/theme'));

@@ -34,9 +34,8 @@ npx create-threejs-game
 
 You'll be asked for:
 1. Project name
-2. Game asset folder name
-3. Game description (1-3 sentences)
-4. API keys (optional, can configure later)
+2. Game description (1-3 sentences)
+3. API keys (optional, can configure later)
 
 ## Manual Steps
 
