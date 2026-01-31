@@ -91,7 +91,9 @@ const tddContent = fs.readFileSync(tddPath, 'utf-8');
 const assetsJson = fs.readFileSync(assetsJsonPath, 'utf-8');
 
 // Build prompt
-const prompt = `Implement the game defined in the PRD below, adhering to the technical design in the TDD.
+const prompt = `You are creating an execution plan for implementing a Three.js game.
+
+Analyze the PRD and TDD below, then create a phased implementation plan based ONLY on what these documents specify. Do NOT assume any features not mentioned in the documents.
 
 ## PRD (Product Requirements Document):
 ${prdContent}
@@ -106,95 +108,37 @@ ${assetsJson}
 
 ---
 
-Create a concise execution plan for implementing this game. The plan should be actionable and reference specific sections from the TDD.
+Create a concise, actionable execution plan. Structure it as follows:
 
-# ${game.name.charAt(0).toUpperCase() + game.name.slice(1)} - Implementation Plan
+# ${game.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - Implementation Plan
 
 ## Overview
 - Target file: \`public/index.html\` (single HTML file with inline CSS/JS)
-- Key references to PRD and TDD sections
+- Brief summary of the game type and core mechanics (from PRD)
 - Asset path format: \`assets/${game.name}/glTF/<FILENAME>.gltf\`
 
 ## Implementation Phases
 
-### Phase 1: Core Engine (Critical)
-What to implement from TDD:
-- HTML structure with import map for Three.js r160
-- Renderer with letterboxing
-- Camera system
-- Lighting setup
-- Ground plane
+Analyze the TDD and create phases based on what's ACTUALLY in the documents. Each phase should:
+1. Have a clear name describing what it implements
+2. Be marked as (Critical), (Important), or (Polish)
+3. List specific items to implement from the TDD
+4. Reference relevant TDD sections
 
-### Phase 2: Asset Loading (Critical)
-- GLTFLoader setup
-- Core asset manifest
-- Fallback primitives
+Start with foundational systems (renderer, camera, asset loading) then progress through game-specific systems as defined in the TDD. Only include phases for features that exist in the PRD/TDD.
 
-### Phase 3: ECS Architecture (Critical)
-- Entity class
-- All component classes
-- Entity Manager
-- Entity Factory
-
-### Phase 4: Selection System (Critical)
-- Click selection
-- Box selection
-- Visual feedback (rings, animations)
-
-### Phase 5: Command System (Critical)
-- Move commands
-- Attack commands
-- Context-sensitive commands
-
-### Phase 6: Movement System (Critical)
-- Unit movement
-- Collision/separation
-- Turn rate smoothing
-
-### Phase 7: Combat System (Critical)
-- Melee attacks
-- Ranged attacks (if applicable)
-- Damage and death
-
-### Phase 8: Economy System (Important)
-- Resource gathering (if applicable)
-- Building placement (if applicable)
-- Unit training (if applicable)
-
-### Phase 9: AI System (Important)
-- State machine
-- Economy behavior
-- Combat behavior
-
-### Phase 10: UI & Game States (Important)
-- Menu screen
-- HUD elements
-- Pause screen
-- Game over screen
-
-### Phase 11: Effects (Polish)
-- Screen shake
-- Time dilation
-- Particles
-- Death sequences
-
-### Phase 12: Mobile/Polish (Polish)
-- Touch controls
-- Onboarding tooltips
-- Final polish
-
-## Map Setup
-- Initial entity positions
-- Resource placement
-- Obstacle placement
+## Initial Scene Setup
+Based on the PRD/TDD, describe:
+- What entities/objects should be placed initially
+- Their positions and configurations
+- Any level/map setup required
 
 ## Verification Checklist
-From PRD Success Criteria:
-- [ ] Game loads without errors
-- [ ] (Include all success criteria)
+Extract ALL success criteria from the PRD and list them as checkboxes:
+- [ ] (each criterion from PRD)
 
-## Estimated Code Size
-~3000-4000 lines of JavaScript
+## Estimated Complexity
+Based on the TDD scope, estimate code size and complexity.
 
 ## Next Step
 To implement, use this prompt with Claude Code:

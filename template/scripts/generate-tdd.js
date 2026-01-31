@@ -87,7 +87,9 @@ if (fs.existsSync(skillsDir)) {
 }
 
 // Build prompt
-const prompt = `Based on the following PRD, create a comprehensive Technical Design Document (TDD) that will ensure we can implement this game with minimal problems and maximum speed.
+const prompt = `You are creating a Technical Design Document (TDD) for implementing a Three.js game.
+
+Analyze the PRD below and create a TDD that covers ONLY the systems and features specified in the PRD. Do NOT add systems not required by the PRD.
 
 ## PRD (Product Requirements Document):
 ${prdContent}
@@ -102,87 +104,72 @@ ${skillsContext.substring(0, 30000)}
 
 ---
 
-Create a Technical Design Document with the following sections. Include COMPLETE, RUNNABLE code examples (not pseudocode):
+Create a Technical Design Document with COMPLETE, RUNNABLE code examples (not pseudocode). Structure as follows:
 
 ## 1. Overview
-- Technical stack summary table
-- Reference materials list
+- Technical stack summary
+- Systems required based on PRD analysis
 
 ## 2. Architecture Overview
-- High-level module structure diagram (ASCII art)
+- High-level module structure (ASCII diagram)
 - Game state flow diagram
 
 ## 3. Core Engine Systems
-Include full implementation code for:
-- Renderer setup with letterboxing
-- Scene setup with fog and background
-- RTS/appropriate Camera system class
-- Lighting system setup
-- Asset loading system with LoadingManager, GLTF loading, fallback primitives
-- Asset manifest listing core assets to load
+Full implementation code for:
+- Renderer setup with letterboxing (from PRD viewport specs)
+- Scene setup with background/fog
+- Camera system appropriate for this game type
+- Lighting system (from PRD visual style)
+- Asset loading with LoadingManager, GLTF loading, fallback primitives
+- Asset manifest (list assets needed based on PRD)
 
-## 4. Entity Component System (ECS)
-Include full code for:
-- Core Entity class
-- All component classes (Transform, Health, Movement, Combat, Collision, Selectable, etc.)
-- Unit and building stats configuration objects
-- Entity Factory with creation methods
+## 4. Game Object System
+Based on the PRD's Game Elements section, implement:
+- Base entity/object class
+- Component classes ONLY for features in the PRD
+- Configuration objects for game entities
+- Factory methods for creating game objects
 
 ## 5. Game Systems
-Include full implementation code for each:
-- Entity Manager (add, remove, query)
-- Selection System (click, box select, visual feedback)
-- Command System (move, attack, context-sensitive commands)
-- Movement System (steering, separation, turn rate)
-- Combat System (melee, ranged, projectiles, damage application)
-- Economy/Resource System (gathering, dropoff, training queues)
-- AI System (state machine, economy, military, raids)
+For EACH system mentioned in the PRD's Core Mechanics, include full code:
+- Only implement systems the PRD specifies
+- Each system should be a self-contained class/module
+- Include all methods needed for that system
 
 ## 6. Visual Effects System
-Include code for:
+Based on PRD's Game Feel section:
 - Effects Manager class
-- Screen shake implementation
-- Time dilation
-- Floating text
-- Particle effects (sparks, debris)
-- Death sequences (unit collapse, building destruction)
+- Only effects specified in the PRD
 
 ## 7. UI System
-Include complete:
+From PRD's Game States and UX sections:
 - HTML structure
-- Full CSS styles
-- HUD elements
+- CSS styles
+- HUD elements needed for this game
 - Menu screens (main, pause, game over)
-- Build palette if applicable
-- Mobile touch controls
+- Touch controls if PRD specifies mobile support
 
 ## 8. Main Game Loop
-Include full implementation:
-- Game State enum
-- Complete Game class with all methods
+- Game State enum (from PRD's Game States)
+- Complete Game class
 - Animation loop
-- Win/lose condition checking
+- Win/lose condition checking (from PRD)
 - HUD updates
 
 ## 9. Implementation Phases
-Ordered list with:
+Ordered phases based on system dependencies:
 - Phase name and priority (Critical/Important/Polish)
 - What to implement
-- Dependencies
+- Dependencies on prior phases
 
 ## 10. Performance Considerations
-- Rendering optimizations
-- Game logic optimizations
-- Memory management tips
+- Optimizations relevant to this game type
 
 ## 11. Testing Checklist
-- All success criteria as checkboxes
+- All success criteria from PRD as checkboxes
 
 ## 12. Appendix
-- Color palette reference table
-- Animation timing reference table
-- Unit stats reference table
-- Building stats reference table
+- Reference tables for values defined in PRD
 
 All code should use Three.js r160 APIs and follow best practices.`;
 

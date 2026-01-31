@@ -89,103 +89,109 @@ if (fs.existsSync(skillsDir)) {
 }
 
 // Build prompt
-const prompt = `${game.description}
+const prompt = `You are creating a Product Requirements Document (PRD) for a Three.js browser game.
 
-I have concept mockups that reflect how the game looks (attached as concept.jpg).
-I have also added a preview of the assets that are available (attached as Preview.jpg).
+## Game Description:
+${game.description}
 
-Here is the assets.json index of all available assets:
+## Visual References:
+- concept.jpg: A mockup showing how the game should look during gameplay
+- Preview.jpg: Preview of the available 3D assets
+
+## Available Assets (assets.json):
 \`\`\`json
 ${assetsJson}
 \`\`\`
 
-Create a comprehensive Game Design Document (PRD) with the following sections:
+---
+
+Analyze the game description and mockup, then create a comprehensive PRD. Include ONLY sections relevant to this specific game type. Do NOT assume features not implied by the description.
+
+# ${game.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - Product Requirements Document
 
 ## 1. Summary
-- Brief description of the game
+- Brief description of the game and its genre
+- Core gameplay loop
 - Target platform (browser-based)
 - Key assumptions and constraints for V1
-- Match length / session time
+- Session/match length
 
 ## 2. Technical Requirements
 - Three.js version (r160 recommended)
 - Delivery format (single HTML file preferred)
 - Unit system (world units = meters)
 - Required loaders (GLTFLoader)
-- Valid materials and lights
 
 ## 3. Canvas & Viewport
-- Internal resolution (e.g., 960×540)
-- Aspect ratio handling (letterboxing if fixed)
+- Internal resolution
+- Aspect ratio handling
 - Background style
 
 ## 4. Visual Style & Art Direction
-- Overall look description
-- Color palette with hex codes and purposes
+- Overall look (based on mockup)
+- Color palette with hex codes
 - Mood/atmosphere
-- Camera style and defaults (pitch, yaw, zoom range)
+- Camera style appropriate for this game type
 - Lighting mood
 
-## 5. Player Specifications
-- Faction/player identity if applicable
-- Unit types with appearance, size, role, and stats
-- Starting setup (resources, units, position)
-- Movement constraints
+## 5. Game Elements
+Based on the game description, define all relevant game objects:
+- Player character/avatar (if applicable)
+- Controllable entities and their properties
+- Interactive objects
+- Environmental elements
+- Any NPCs or AI entities
+Reference specific assets from assets.json by filename.
 
-## 6. Physics & Movement
-- Movement model (kinematic, physics-based)
-- Gravity, speeds, collision approach
-- Unit movement values table
+## 6. Core Mechanics
+Define the primary gameplay systems this game needs:
+- Movement/navigation system
+- Primary interaction mechanics
+- Progression/scoring system
+- Any resource or economy systems (if applicable)
+- Combat/conflict systems (if applicable)
 
-## 7. Obstacles/Enemies
-- Enemy types and behaviors
-- Neutral obstacles using available assets
-- Spawn timing and difficulty scaling
-
-## 8. World & Environment
-- Map layout and dimensions
-- Resource/pickup nodes and their values
-- Buildings/structures using available GLTF assets (reference specific asset names)
+## 7. World & Environment
+- Map/level layout and dimensions
+- Environmental features using available assets
 - Fallback primitives if assets fail to load
 
-## 9. Collision & Scoring
-- Collision shapes and approach
-- Win/lose conditions
-- Score system and point values
-- High score storage (localStorage key)
+## 8. Win/Lose Conditions
+- Victory conditions
+- Failure conditions
+- Score/progress tracking
+- Data persistence (localStorage)
 
-## 10. Controls
-- Complete input mapping table
-- Desktop and touch/mobile controls
+## 9. Controls
+- Complete input mapping for this game type
+- Desktop controls
+- Touch/mobile controls
 - Keyboard shortcuts
 
-## 11. Game States
-- Menu state (buttons, background)
-- Playing state (active systems, UI shown)
-- Paused state (trigger, display, frozen elements)
-- Game Over state (display, stats, retry flow)
+## 10. Game States
+- Menu state
+- Playing state
+- Paused state
+- Game Over state
 
-## 12. Game Feel & Juice (REQUIRED)
-- Input response feedback (selection, commands)
-- Animation timing table
-- Screen effects (shake, flash, zoom, time dilation)
-- Death sequences
-- Milestone celebrations
-- Idle life animations
+## 11. Game Feel & Juice
+- Input feedback appropriate for this game
+- Animation timing
+- Visual/audio effects
+- Celebrations and rewards
 
-## 13. UX Requirements
+## 12. UX Requirements
 - Controls visibility
-- Onboarding flow
-- Readability considerations
-- Forgiving mechanics
+- Onboarding/tutorial
+- Accessibility considerations
 
-## 14. Out of Scope (V1)
+## 13. Out of Scope (V1)
 - Features explicitly NOT included
 
-## 15. Success Criteria
-- Checklist of requirements the game must meet
+## 14. Success Criteria
+- Checklist of testable requirements
 
-Reference the assets.json for available models. Use specific asset names (e.g., "TownCenter_FirstAge_Level1.gltf") when specifying which assets to use for game elements.`;
+Reference specific asset filenames from assets.json when describing game elements.`;
 
 console.log('Generating PRD with Claude API (Opus 4.5)...');
 console.log('Game:', game.name);
