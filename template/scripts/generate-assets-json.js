@@ -63,17 +63,58 @@ function getCategory(ext) {
   return 'Other';
 }
 
-// Get pack name from relative path (first directory component)
-function getPackName(relativePath) {
+// Find preview image in a directory
+function findPreview(dir) {
+  const previewNames = ['Preview.jpg', 'Preview.png', 'preview.jpg', 'preview.png', 
+                        'Preview.jpeg', 'preview.jpeg'];
+  for (const name of previewNames) {
+    const previewPath = path.join(dir, name);
+    if (fs.existsSync(previewPath)) {
+      return previewPath;
+    }
+  }
+  return null;
+}
+
+// Find all directories with preview images (these are the "packs")
+function findPackDirs(rootDir) {
+  const packDirs = [];
+  
+  function scan(dir) {
+    if (findPreview(dir)) {
+      packDirs.push(dir);
+    }
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory() && !entry.name.startsWith('.')) {
+        scan(path.join(dir, entry.name));
+      }
+    }
+  }
+  
+  scan(rootDir);
+  return packDirs;
+}
+
+// Get pack name for a file based on which pack directory it's under
+function getPackName(filePath, packDirs, rootDir) {
+  // Find the pack directory that contains this file
+  for (const packDir of packDirs) {
+    if (filePath.startsWith(packDir + path.sep) || filePath.startsWith(packDir + '/')) {
+      return path.relative(rootDir, packDir).replace(/\\/g, '/');
+    }
+  }
+  // Fallback to first directory component
+  const relativePath = path.relative(rootDir, filePath).replace(/\\/g, '/');
   const parts = relativePath.split('/');
   if (parts.length > 1) {
     return parts[0];
   }
-  return null; // Asset is at root level
+  return null;
 }
 
 // Recursively scan directory for assets
-function scanDirectory(dir, relativeTo, rootDir = relativeTo) {
+function scanDirectory(dir, relativeTo, packDirs = []) {
   const assets = [];
   
   if (!fs.existsSync(dir)) {
@@ -89,7 +130,7 @@ function scanDirectory(dir, relativeTo, rootDir = relativeTo) {
       // Skip hidden directories
       if (item.name.startsWith('.')) continue;
       // Recursively scan subdirectories
-      assets.push(...scanDirectory(fullPath, relativeTo, rootDir));
+      assets.push(...scanDirectory(fullPath, relativeTo, packDirs));
     } else if (item.isFile()) {
       const ext = path.extname(item.name).toLowerCase();
       
@@ -106,7 +147,7 @@ function scanDirectory(dir, relativeTo, rootDir = relativeTo) {
       
       const relativePath = path.relative(relativeTo, fullPath).replace(/\\/g, '/');
       const category = getCategory(ext);
-      const pack = getPackName(relativePath);
+      const pack = getPackName(fullPath, packDirs, relativeTo);
       
       const asset = {
         name: item.name,
@@ -132,7 +173,13 @@ function scanDirectory(dir, relativeTo, rootDir = relativeTo) {
 // Main execution
 console.log(`Scanning assets in: ${assetsDir}`);
 
-const assets = scanDirectory(assetsDir, assetsDir);
+// Find all directories with preview images (these define the packs)
+const packDirs = findPackDirs(assetsDir);
+if (packDirs.length > 0) {
+  console.log(`Found ${packDirs.length} asset packs with previews`);
+}
+
+const assets = scanDirectory(assetsDir, assetsDir, packDirs);
 
 // Sort assets by pack then name
 assets.sort((a, b) => {
