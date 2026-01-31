@@ -49,25 +49,33 @@ anthropic.api_key = apiKey;
 
 // Paths
 const assetsDir = path.join(projectRoot, 'public', 'assets', game.name);
-const conceptPath = path.join(projectRoot, 'public', game.name, 'concept.jpg');
+// Find concept image (can be jpg or png)
+const conceptDir = path.join(projectRoot, 'public', game.name);
+const conceptPath = ['concept.jpg', 'concept.png', 'concept.jpeg']
+  .map(f => path.join(conceptDir, f))
+  .find(p => fs.existsSync(p));
 const previewPath = path.join(assetsDir, 'Preview.jpg');
 const assetsJsonPath = path.join(assetsDir, 'assets.json');
 const outputPath = path.join(projectRoot, 'docs', 'prd.md');
 
 // Check required files
 const missingFiles = [];
-if (!fs.existsSync(conceptPath)) missingFiles.push(conceptPath);
+if (!conceptPath) missingFiles.push(path.join(conceptDir, 'concept.jpg/png'));
 if (!fs.existsSync(previewPath)) missingFiles.push(previewPath);
 if (!fs.existsSync(assetsJsonPath)) missingFiles.push(assetsJsonPath);
 
 if (missingFiles.length > 0) {
   console.error('Error: Missing required files:');
   missingFiles.forEach(f => console.error('  - ' + f));
-  if (missingFiles.includes(conceptPath)) {
+  if (!conceptPath) {
     console.error('\nRun: node generate-mockup.js first');
   }
   process.exit(1);
 }
+
+// Determine mime type from extension
+const conceptExt = path.extname(conceptPath).toLowerCase();
+const conceptMimeType = conceptExt === '.png' ? 'image/png' : 'image/jpeg';
 
 // Read files
 const conceptImage = fs.readFileSync(conceptPath).toString('base64');
@@ -207,7 +215,7 @@ const requestBody = JSON.stringify({
         type: 'image',
         source: {
           type: 'base64',
-          media_type: 'image/jpeg',
+          media_type: conceptMimeType,
           data: conceptImage
         }
       },

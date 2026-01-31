@@ -52,7 +52,6 @@ const assetsDir = path.join(projectRoot, 'public', 'assets', game.name);
 const previewPath = path.join(assetsDir, 'Preview.jpg');
 const assetsJsonPath = path.join(assetsDir, 'assets.json');
 const outputDir = path.join(projectRoot, 'public', game.name);
-const outputPath = path.join(outputDir, 'concept.jpg');
 
 // Check required files
 if (!fs.existsSync(previewPath)) {
@@ -148,15 +147,20 @@ const req = https.request(options, (res) => {
         process.exit(1);
       }
       
-      // Find image in response
+      // Find image in response (handle both camelCase and snake_case)
       const candidates = response.candidates || [];
       let imageData = null;
+      let mimeType = 'image/png';
       
       for (const candidate of candidates) {
         const parts = candidate.content?.parts || [];
         for (const part of parts) {
-          if (part.inline_data?.mime_type?.startsWith('image/')) {
-            imageData = part.inline_data.data;
+          // Gemini 3 uses camelCase (inlineData), older APIs use snake_case (inline_data)
+          const inlineData = part.inlineData || part.inline_data;
+          const partMimeType = inlineData?.mimeType || inlineData?.mime_type;
+          if (inlineData && partMimeType?.startsWith('image/')) {
+            imageData = inlineData.data;
+            mimeType = partMimeType;
             break;
           }
         }
@@ -173,6 +177,10 @@ const req = https.request(options, (res) => {
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
       }
+      
+      // Determine file extension from mime type
+      const ext = mimeType.includes('png') ? 'png' : 'jpg';
+      const outputPath = path.join(outputDir, `concept.${ext}`);
       
       // Save image
       const imageBuffer = Buffer.from(imageData, 'base64');

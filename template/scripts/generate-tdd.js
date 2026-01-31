@@ -49,7 +49,11 @@ anthropic.api_key = apiKey;
 
 // Paths
 const prdPath = path.join(projectRoot, 'docs', 'prd.md');
-const conceptPath = path.join(projectRoot, 'public', game.name, 'concept.jpg');
+// Find concept image (can be jpg or png)
+const conceptDir = path.join(projectRoot, 'public', game.name);
+const conceptPath = ['concept.jpg', 'concept.png', 'concept.jpeg']
+  .map(f => path.join(conceptDir, f))
+  .find(p => fs.existsSync(p));
 const assetsJsonPath = path.join(projectRoot, 'public', 'assets', game.name, 'assets.json');
 const previewPath = path.join(projectRoot, 'public', 'assets', game.name, 'Preview.jpg');
 const outputPath = path.join(projectRoot, 'docs', 'tdd.md');
@@ -57,7 +61,7 @@ const outputPath = path.join(projectRoot, 'docs', 'tdd.md');
 // Check required files
 const missingFiles = [];
 if (!fs.existsSync(prdPath)) missingFiles.push(prdPath + ' (run generate-prd.js first)');
-if (!fs.existsSync(conceptPath)) missingFiles.push(conceptPath);
+if (!conceptPath) missingFiles.push(path.join(conceptDir, 'concept.jpg/png'));
 if (!fs.existsSync(assetsJsonPath)) missingFiles.push(assetsJsonPath);
 
 if (missingFiles.length > 0) {
@@ -65,6 +69,10 @@ if (missingFiles.length > 0) {
   missingFiles.forEach(f => console.error('  - ' + f));
   process.exit(1);
 }
+
+// Determine mime type from extension
+const conceptExt = path.extname(conceptPath).toLowerCase();
+const conceptMimeType = conceptExt === '.png' ? 'image/png' : 'image/jpeg';
 
 // Read files
 const prdContent = fs.readFileSync(prdPath, 'utf-8');
@@ -188,7 +196,7 @@ const requestBody = JSON.stringify({
         type: 'image',
         source: {
           type: 'base64',
-          media_type: 'image/jpeg',
+          media_type: conceptMimeType,
           data: conceptImage
         }
       },

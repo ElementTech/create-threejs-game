@@ -159,10 +159,14 @@ async function runPipeline() {
       console.log('\n🎨 STEP 2: Concept Mockup');
       console.log('─'.repeat(40));
       
-      const conceptPath = path.join(projectRoot, 'public', gameName, 'concept.jpg');
+      // Check for existing concept image (jpg or png)
+      const conceptDir = path.join(projectRoot, 'public', gameName);
+      const existingConcept = ['concept.jpg', 'concept.png', 'concept.jpeg']
+        .map(f => path.join(conceptDir, f))
+        .find(p => fs.existsSync(p));
       
-      if (fs.existsSync(conceptPath)) {
-        console.log('✓ concept.jpg already exists');
+      if (existingConcept) {
+        console.log(`✓ ${path.basename(existingConcept)} already exists`);
         console.log('  Use --skip-mockup to keep it, or delete to regenerate');
       }
       
@@ -203,7 +207,15 @@ async function runPipeline() {
     console.log('');
     console.log('Generated files:');
     checkFile(path.join(assetsDir, 'assets.json'), '  assets.json');
-    checkFile(path.join(projectRoot, 'public', gameName, 'concept.jpg'), '  concept.jpg');
+    // Check for concept image (jpg or png)
+    const conceptDir = path.join(projectRoot, 'public', gameName);
+    const conceptFile = ['concept.jpg', 'concept.png', 'concept.jpeg']
+      .find(f => fs.existsSync(path.join(conceptDir, f)));
+    if (conceptFile) {
+      checkFile(path.join(conceptDir, conceptFile), `  ${conceptFile}`);
+    } else {
+      console.log('  concept.jpg/png ✗');
+    }
     checkFile(path.join(projectRoot, 'docs', 'prd.md'), '  prd.md');
     checkFile(path.join(projectRoot, 'docs', 'tdd.md'), '  tdd.md');
     
