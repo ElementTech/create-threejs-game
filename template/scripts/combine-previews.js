@@ -80,12 +80,14 @@ function calculateGrid(count) {
 
 /**
  * Combine images into a grid
+ * Default cell size is 960x540 (16:9 aspect ratio, half of 1080p)
+ * This works well for most asset pack previews
  */
 async function combineImages(previews, outputPath, options = {}) {
   const {
-    cellWidth = 512,
-    cellHeight = 512,
-    padding = 10,
+    cellWidth = 960,
+    cellHeight = 540,
+    padding = 15,
     backgroundColor = { r: 30, g: 30, b: 30, alpha: 1 }
   } = options;
   

@@ -161,9 +161,10 @@ async function combinePreviews(packs, outputPath) {
     return null;
   }
   
-  const cellWidth = 512;
-  const cellHeight = 512;
-  const padding = 10;
+  // 16:9 aspect ratio cells work well for most asset pack previews
+  const cellWidth = 960;
+  const cellHeight = 540;
+  const padding = 15;
   const backgroundColor = { r: 30, g: 30, b: 30, alpha: 1 };
   
   const cols = Math.ceil(Math.sqrt(packs.length));
