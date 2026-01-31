@@ -3,14 +3,14 @@
 /**
  * TDD Generation Script
  * 
- * Uses Claude API (Opus 4.5) to generate a Technical Design Document
+ * Uses OpenAI API (GPT-4o) to generate a Technical Design Document
  * based on the PRD, assets, and concept mockup.
  * 
  * Usage:
  *   node generate-tdd.js
  * 
  * Requires:
- *   - config.json with anthropic.api_key and game settings
+ *   - config.json with openai.api_key and game settings
  *   - docs/prd.md (run generate-prd.js first)
  *   - public/{game_name}/concept.jpg
  *   - public/assets/{game_name}/assets.json
@@ -31,21 +31,18 @@ if (!fs.existsSync(configPath)) {
 }
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-const { anthropic, game } = config;
+const { openai, game } = config;
 
 // Check config first, then env vars
-const apiKey = (anthropic?.api_key && !anthropic.api_key.includes('YOUR_'))
-  ? anthropic.api_key
-  : process.env.ANTHROPIC_API_KEY;
+const apiKey = (openai?.api_key && !openai.api_key.includes('YOUR_'))
+  ? openai.api_key
+  : process.env.OPENAI_API_KEY;
 
 if (!apiKey) {
-  console.error('Error: Anthropic API key not found');
-  console.error('Set ANTHROPIC_API_KEY env var or configure scripts/config.json');
+  console.error('Error: OpenAI API key not found');
+  console.error('Set OPENAI_API_KEY env var or configure scripts/config.json');
   process.exit(1);
 }
-
-// Use resolved key
-anthropic.api_key = apiKey;
 
 // Paths
 const prdPath = path.join(projectRoot, 'docs', 'prd.md');
@@ -55,7 +52,6 @@ const conceptPath = ['concept.jpg', 'concept.png', 'concept.jpeg']
   .map(f => path.join(conceptDir, f))
   .find(p => fs.existsSync(p));
 const assetsJsonPath = path.join(projectRoot, 'public', 'assets', game.name, 'assets.json');
-const previewPath = path.join(projectRoot, 'public', 'assets', game.name, 'Preview.jpg');
 const outputPath = path.join(projectRoot, 'docs', 'tdd.md');
 
 // Check required files
@@ -181,23 +177,21 @@ Ordered phases based on system dependencies:
 
 All code should use Three.js r160 APIs and follow best practices.`;
 
-console.log('Generating TDD with Claude API (Opus 4.5)...');
+console.log('Generating TDD with OpenAI API (GPT-5.2)...');
 console.log('Game:', game.name);
 console.log('This may take a minute due to the comprehensive output...');
 
-// Claude API request
+// OpenAI API request
 const requestBody = JSON.stringify({
-  model: 'claude-sonnet-4-20250514',
-  max_tokens: 64000,
+  model: 'gpt-5.2',
+  max_completion_tokens: 128000,
   messages: [{
     role: 'user',
     content: [
       {
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: conceptMimeType,
-          data: conceptImage
+        type: 'image_url',
+        image_url: {
+          url: `data:${conceptMimeType};base64,${conceptImage}`
         }
       },
       {
@@ -209,14 +203,13 @@ const requestBody = JSON.stringify({
 });
 
 const options = {
-  hostname: 'api.anthropic.com',
+  hostname: 'api.openai.com',
   port: 443,
-  path: '/v1/messages',
+  path: '/v1/chat/completions',
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'x-api-key': anthropic.api_key,
-    'anthropic-version': '2023-06-01'
+    'Authorization': `Bearer ${apiKey}`
   }
 };
 
@@ -239,18 +232,12 @@ const req = https.request(options, (res) => {
         process.exit(1);
       }
       
-      // Extract text content
-      const content = response.content || [];
-      let tddContent = '';
-      
-      for (const block of content) {
-        if (block.type === 'text') {
-          tddContent += block.text;
-        }
-      }
+      // Extract text content from OpenAI response
+      const tddContent = response.choices?.[0]?.message?.content || '';
       
       if (!tddContent) {
         console.error('No content in response');
+        console.error('Response:', JSON.stringify(response, null, 2).substring(0, 2000));
         process.exit(1);
       }
       

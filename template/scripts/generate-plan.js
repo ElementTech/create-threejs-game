@@ -3,7 +3,7 @@
 /**
  * Execution Plan Generation Script
  * 
- * Uses Claude API (Opus 4.5) to generate an implementation plan
+ * Uses OpenAI API (GPT-4o) to generate an implementation plan
  * based on the PRD and TDD.
  * 
  * Usage:
@@ -13,7 +13,7 @@
  *   node generate-plan.js initial-implementation
  * 
  * Requires:
- *   - config.json with anthropic.api_key and game settings
+ *   - config.json with openai.api_key and game settings
  *   - docs/prd.md
  *   - docs/tdd.md
  *   - public/assets/{game_name}/assets.json
@@ -47,21 +47,18 @@ if (!fs.existsSync(configPath)) {
 }
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-const { anthropic, game } = config;
+const { openai, game } = config;
 
 // Check config first, then env vars
-const apiKey = (anthropic?.api_key && !anthropic.api_key.includes('YOUR_'))
-  ? anthropic.api_key
-  : process.env.ANTHROPIC_API_KEY;
+const apiKey = (openai?.api_key && !openai.api_key.includes('YOUR_'))
+  ? openai.api_key
+  : process.env.OPENAI_API_KEY;
 
 if (!apiKey) {
-  console.error('Error: Anthropic API key not found');
-  console.error('Set ANTHROPIC_API_KEY env var or configure scripts/config.json');
+  console.error('Error: OpenAI API key not found');
+  console.error('Set OPENAI_API_KEY env var or configure scripts/config.json');
   process.exit(1);
 }
-
-// Use resolved key
-anthropic.api_key = apiKey;
 
 // Plan name from args or generate
 const planName = process.argv[2] || generatePlanName();
@@ -148,14 +145,14 @@ Use the Three.js skills for reference.
 \`\`\`
 `;
 
-console.log('Generating execution plan with Claude API...');
+console.log('Generating execution plan with OpenAI API (GPT-5.2)...');
 console.log('Game:', game.name);
 console.log('Plan name:', planName);
 
-// Claude API request
+// OpenAI API request
 const requestBody = JSON.stringify({
-  model: 'claude-sonnet-4-20250514',
-  max_tokens: 8000,
+  model: 'gpt-5.2',
+  max_completion_tokens: 128000,
   messages: [{
     role: 'user',
     content: prompt
@@ -163,14 +160,13 @@ const requestBody = JSON.stringify({
 });
 
 const options = {
-  hostname: 'api.anthropic.com',
+  hostname: 'api.openai.com',
   port: 443,
-  path: '/v1/messages',
+  path: '/v1/chat/completions',
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'x-api-key': anthropic.api_key,
-    'anthropic-version': '2023-06-01'
+    'Authorization': `Bearer ${apiKey}`
   }
 };
 
@@ -193,15 +189,8 @@ const req = https.request(options, (res) => {
         process.exit(1);
       }
       
-      // Extract text content
-      const content = response.content || [];
-      let planContent = '';
-      
-      for (const block of content) {
-        if (block.type === 'text') {
-          planContent += block.text;
-        }
-      }
+      // Extract text content from OpenAI response
+      const planContent = response.choices?.[0]?.message?.content || '';
       
       if (!planContent) {
         console.error('No content in response');

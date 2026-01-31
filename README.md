@@ -35,7 +35,7 @@ Set these as environment variables for the smoothest experience:
 
 ```bash
 export GOOGLE_API_KEY="your-key"      # or GOOGLE_AI_STUDIO_API_KEY
-export ANTHROPIC_API_KEY="your-key"
+export OPENAI_API_KEY="your-key"
 ```
 
 Get keys from:

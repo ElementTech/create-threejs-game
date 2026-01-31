@@ -300,7 +300,7 @@ async function main() {
   
   // API Keys - check env vars first
   let googleApiKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY || '';
-  let anthropicApiKey = process.env.ANTHROPIC_API_KEY || '';
+  let anthropicApiKey = process.env.OPENAI_API_KEY || '';
   
   const hasGoogleEnv = googleApiKey && googleApiKey.length > 10;
   const hasAnthropicEnv = anthropicApiKey && anthropicApiKey.length > 10;
@@ -309,7 +309,7 @@ async function main() {
     console.log(c('bright', '🔑 API Keys'));
     console.log(c('dim', '─'.repeat(50)));
     console.log(c('green', '  ✓ ') + 'GOOGLE_API_KEY found in environment');
-    console.log(c('green', '  ✓ ') + 'ANTHROPIC_API_KEY found in environment');
+    console.log(c('green', '  ✓ ') + 'OPENAI_API_KEY found in environment');
     console.log('');
   } else {
     console.log(c('bright', '🔑 API Keys (optional - can configure later)'));
@@ -323,7 +323,7 @@ async function main() {
     }
     
     if (hasAnthropicEnv) {
-      console.log(c('green', '  ✓ ') + 'ANTHROPIC_API_KEY found in environment');
+      console.log(c('green', '  ✓ ') + 'OPENAI_API_KEY found in environment');
     } else {
       console.log(c('dim', 'Anthropic enables automated PRD/TDD/plan generation.'));
       anthropicApiKey = await ask('Anthropic API key');
@@ -428,7 +428,7 @@ async function main() {
       api_key: googleApiKey || 'YOUR_GOOGLE_AI_STUDIO_API_KEY'
     },
     anthropic: {
-      api_key: anthropicApiKey || 'YOUR_ANTHROPIC_API_KEY'
+      api_key: anthropicApiKey || 'YOUR_OPENAI_API_KEY'
     },
     game: {
       name: gameName,
