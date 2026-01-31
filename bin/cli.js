@@ -101,8 +101,12 @@ function copyDir(src, dest, exclude = []) {
 
 // Find preview image in a directory
 function findPreview(dir) {
-  const previewNames = ['Preview.jpg', 'Preview.png', 'preview.jpg', 'preview.png', 
-                        'Preview.jpeg', 'preview.jpeg'];
+  const previewNames = [
+    'Preview.jpg', 'Preview.png', 'preview.jpg', 'preview.png', 
+    'Preview.jpeg', 'preview.jpeg',
+    'Content.jpg', 'Content.png', 'content.jpg', 'content.png',
+    'Content.jpeg', 'content.jpeg'
+  ];
   for (const name of previewNames) {
     const previewPath = path.join(dir, name);
     if (fs.existsSync(previewPath)) {
