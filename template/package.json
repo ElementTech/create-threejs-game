@@ -1,0 +1,17 @@
+{
+  "name": "threejs-game-template",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Three.js game development template (AI-assisted docs + Playwright game testing)",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "pipeline": "node scripts/pipeline.js",
+    "test:game": "node scripts/test-game.js",
+    "play:game": "node scripts/play-game.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.1"
+  }
+}
