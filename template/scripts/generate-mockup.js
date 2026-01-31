@@ -115,15 +115,16 @@ const requestBody = JSON.stringify({
     ]
   }],
   generationConfig: {
-    responseModalities: ['image', 'text'],
-    responseMimeType: 'image/jpeg'
+    imageConfig: {
+      aspectRatio: '16:9'
+    }
   }
 });
 
 const options = {
   hostname: 'generativelanguage.googleapis.com',
   port: 443,
-  path: `/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${google_ai_studio.api_key}`,
+  path: `/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${google_ai_studio.api_key}`,
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
